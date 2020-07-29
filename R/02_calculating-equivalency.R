@@ -1,4 +1,4 @@
-library(ModelMetrics)
+library(yardstick)
 library(tidyverse)
 
 combo <- read_csv("data/combo.csv")
@@ -24,14 +24,12 @@ g_league_equiv <- g_league %>%
   select(Season, Player, PTS_EQUIV:REB_EQUIV)
 
 # Measuring accuracy of this generalized method
-accuracy_df <- combo %>%
-  select(Player, Season, PTS_nba, AST_nba, TRB_nba) %>%
-  mutate(Season = as.character(Season)) %>%
-  inner_join(g_league_equiv, by = c("Player", "Season")) %>%
-  # Calculating RMSE for all players
-  summarize(PTS_accuracy = rmse(actual = PTS_nba,
-                                predicted = PTS_EQUIV),
-            AST_accuracy = rmse(actual = AST_nba,
-                                predicted = AST_EQUIV),
-            REB_accuracy = rmse(actual = TRB_nba,
-                                predicted = REB_EQUIV))
+map2_df(.x = combo %>%
+          mutate(Season = as.character(Season)) %>%
+          inner_join(g_league_equiv, by = c("Player", "Season")) %>%
+          select(PTS_nba, AST_nba, TRB_nba),
+        .y = combo %>%
+          mutate(Season = as.character(Season)) %>%
+          inner_join(g_league_equiv, by = c("Player", "Season")) %>%
+          select(PTS_EQUIV, AST_EQUIV, REB_EQUIV),
+        .f = ~ rmse_vec(truth = .x, estimate = .y))
