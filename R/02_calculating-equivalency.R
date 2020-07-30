@@ -15,6 +15,11 @@ ratios <- combo %>%
   select(Season, Player:Tm_nba, Tm_gleague, PTS_RATIO:REB_RATIO) %>%
   summarize_at(.vars = vars(PTS_RATIO:REB_RATIO),
                .funs = list(mean))
+ratios_by_player <- combo %>%
+  mutate(PTS_RATIO = PTS_nba / PTS_gleague,
+         AST_RATIO = AST_nba / AST_gleague,
+         REB_RATIO = TRB_nba / TRB_gleague) %>%
+  select(Season, Player:Tm_nba, Tm_gleague, PTS_RATIO:REB_RATIO)
 
 # Finding general NBA equivalent stats for all G-League players
 g_league_equiv <- g_league %>%
@@ -33,3 +38,50 @@ map2_df(.x = combo %>%
           inner_join(g_league_equiv, by = c("Player", "Season")) %>%
           select(PTS_EQUIV, AST_EQUIV, REB_EQUIV),
         .f = ~ rmse_vec(truth = .x, estimate = .y))
+
+
+#### Weighted Equivalency ####
+
+# Want to weight equivalency by how similar G-league players are
+
+# We'll specify columns used to get similarity scores
+similarity_columns <- c("PTS", "AST", "TRB")
+# And columns that rep player seasons from our combo tibble
+# We only care about how similar players are to these players
+combo_columns <- (combo %>%
+  mutate(player_season = paste(Player, Season, sep = " ")))$player_season
+
+# Creating a similarity tibble
+g_league_sim <- g_league %>%
+  mutate(player_season = paste(Player, Season, sep = " ")) %>%
+  column_to_rownames(var = "player_season") %>%
+  select(similarity_columns) %>%
+  dist() %>%
+  as.matrix() %>%
+  as.data.frame() %>%
+  select(all_of(combo_columns)) %>%
+  rownames_to_column(var = "player_season")
+
+# Creating a function that will calculate the weighted average ratio
+weighted_ratio <- function(input_player_season){
+  player_ratios <- g_league_sim %>%
+    filter(player_season == input_player_season) %>%
+    pivot_longer(cols = ends_with(as.character(2015:2020)),
+                 names_to = "player_compare") %>%
+    inner_join(ratios_by_player %>%
+                 mutate(player_season = paste(Player, Season, sep = " ")),
+               by = c("player_compare" = "player_season")) %>%
+    group_by(player_season) %>%
+    summarize_at(.vars = vars(PTS_RATIO, AST_RATIO, REB_RATIO),
+                 .funs = ~ weighted.mean(., w = value))
+  
+  g_league %>%
+    mutate(player_season = paste(Player, Season, sep = " ")) %>%
+    filter(player_season == input_player_season) %>%
+    mutate(PTS_EQUIV = PTS * player_ratios$PTS_RATIO,
+           AST_EQUIV = AST * player_ratios$AST_RATIO,
+           REB_EQUIV = TRB * player_ratios$REB_RATIO) %>%
+    select(Season, Player, PTS_EQUIV:REB_EQUIV)
+}
+
+weighted_ratio("Christian Wood 2019")
