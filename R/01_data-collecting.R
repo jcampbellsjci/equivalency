@@ -7,12 +7,12 @@ library(tidyverse)
 # Going to use map to loop through urls and pull g-leage data
 g_league <- map(.x = 2015:2019,
                 .f = ~ read_html(paste(
-                  "https://www.basketball-reference.com/gleague/years/gleague_",
-                  .x, "_per_game.html", sep = "")) %>%
                   # "https://www.basketball-reference.com/gleague/years/gleague_",
-                  # .x, "_per_minute.html", sep = "")) %>%
-                  html_nodes('#per_game_stats') %>%
-                  # html_nodes('#per_minute_stats') %>%
+                  # .x, "_per_game.html", sep = "")) %>%
+                  "https://www.basketball-reference.com/gleague/years/gleague_",
+                  .x, "_per_minute.html", sep = "")) %>%
+                  # html_nodes('#per_game_stats') %>%
+                  html_nodes('#per_minute_stats') %>%
                   html_table() %>%
                   .[[1]] %>%
                   # Filtering out any header rows
@@ -64,3 +64,5 @@ combo <- nba %>%
 
 # Writing data to folder
 write_csv(x = combo, path = "data/combo.csv")
+write_csv(x = g_league, path = "data/g_league.csv")
+write_csv(x = nba, path = "data/nba.csv")
