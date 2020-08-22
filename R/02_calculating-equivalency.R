@@ -82,7 +82,8 @@ weighted_ratio <- function(player, season){
     filter(player_season == input_player_season) %>%
     inner_join(ratios_by_player %>%
                  mutate(player_season = paste(Player, Season, sep = " ")),
-               by = c("player_compare" = "player_season"))
+               by = c("player_compare" = "player_season")) %>%
+    filter(player_season != player_compare)
   
   summarized_ratios <- ratio_df %>%
     group_by(player_season) %>%
