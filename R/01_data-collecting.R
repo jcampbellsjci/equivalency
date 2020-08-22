@@ -5,7 +5,7 @@ library(tidyverse)
 #### Pulling Data ####
 
 # Going to use map to loop through urls and pull g-leage data
-g_league <- map(.x = 2015:2019,
+g_league <- map(.x = 2016:2020,
                 .f = ~ read_html(paste(
                   # "https://www.basketball-reference.com/gleague/years/gleague_",
                   # .x, "_per_game.html", sep = "")) %>%
@@ -24,12 +24,12 @@ g_league <- map(.x = 2015:2019,
 )
 # Output is in a list
 # Name each element of the list to use as an ID
-names(g_league) <- 2015:2019
+names(g_league) <- 2016:2020
 g_league <- g_league %>%
   bind_rows(.id = "Season")
 
 # Performing looping for same timeframe for NBA data
-nba <- map(.x = 2015:2019,
+nba <- map(.x = 2016:2020,
            .f = ~ read_html(paste(
              # "https://www.basketball-reference.com/leagues/NBA_",
              # .x, "_per_game.html", sep = "")) %>%
@@ -45,7 +45,7 @@ nba <- map(.x = 2015:2019,
                        .funs = list(as.numeric)) %>%
              distinct(Player, .keep_all = T)
            )
-names(nba) <- 2015:2019
+names(nba) <- 2016:2020
 nba <- nba %>%
   bind_rows(.id = "Season")
 
